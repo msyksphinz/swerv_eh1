@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2019 Western Digital Corporation or its affiliates.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 // http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -100,7 +100,7 @@ module tb_top ( input logic core_clk, input logic reset_l);
 `ifndef VERILATOR
    `define FORCE force
 `else
-   `define FORCE 
+   `define FORCE
 `endif
 
 
@@ -114,13 +114,13 @@ module tb_top ( input logic core_clk, input logic reset_l);
    always @(posedge core_clk or negedge reset_l) begin
      if( reset_l == 0)
          cycleCnt <= 0;
-     else 
+     else
          cycleCnt <= cycleCnt+1;
    end
 
    always @(posedge core_clk) begin
       //if(cycleCnt == 32'h800)
-      if(cycleCnt == 32'h800)
+      if(cycleCnt == 32'h8000)
         $finish;
    end
 
@@ -131,8 +131,28 @@ module tb_top ( input logic core_clk, input logic reset_l);
        $write("%c", i_ahb_lsu.WriteData[7:0]);
      end
 
-   always @(posedge core_clk)
-     $fwrite(tp,"%b,%h,%h,%0h,%0h,3,%b,%h,%h,%b\n", rvtop.trace_rv_i_valid_ip, rvtop.trace_rv_i_address_ip[63:32], rvtop.trace_rv_i_address_ip[31:0], rvtop.trace_rv_i_insn_ip[63:32], rvtop.trace_rv_i_insn_ip[31:0],rvtop.trace_rv_i_exception_ip,rvtop.trace_rv_i_ecause_ip,rvtop.trace_rv_i_tval_ip,rvtop.trace_rv_i_interrupt_ip);
+   always @(posedge core_clk) begin
+     $fwrite(tp,"%03b,0x%08x_%08x,0x%08x_%08x,3,%03b,%01x,%08x,%03b  ",
+             rvtop.trace_rv_i_valid_ip,
+             rvtop.trace_rv_i_address_ip[63:32],
+             rvtop.trace_rv_i_address_ip[31: 0],
+             rvtop.trace_rv_i_insn_ip[63:32],
+             rvtop.trace_rv_i_insn_ip[31: 0],
+             rvtop.trace_rv_i_exception_ip,
+             rvtop.trace_rv_i_ecause_ip,
+             rvtop.trace_rv_i_tval_ip,
+             rvtop.trace_rv_i_interrupt_ip);
+     if (|rvtop.trace_rv_i_valid_ip[1:0]) begin
+       $fwrite (tp, "// ");
+       if (rvtop.trace_rv_i_valid_ip[1]) begin
+         $fwrite(tp, " | DASM(%08x)", rvtop.trace_rv_i_insn_ip[63:32]);
+       end
+       if (rvtop.trace_rv_i_valid_ip[0]) begin
+         $fwrite(tp, " | DASM(%08x)", rvtop.trace_rv_i_insn_ip[31: 0]);
+       end
+     end // else: !if(|rvtop.trace_rv_i_valid_ip[1:0])
+     $fwrite (tp, "\n");
+   end // always @ (posedge core_clk)
 
    initial begin
 
@@ -149,20 +169,20 @@ module tb_top ( input logic core_clk, input logic reset_l);
      reset_l = 0;
 `endif
 
-     $readmemh("data.hex",     i_ahb_lsu.mem);
-     $readmemh("program.hex",  i_ahb_ic.mem);
+     $readmemh("data.hex",          i_ahb_lsu.mem);
+     $readmemh("program.hex", i_ahb_ic.mem);
      tp = $fopen("trace_port.csv","w");
 
 `ifndef VERILATOR
      repeat (5) @(posedge core_clk);
      reset_l = 1;
-     #4500 $finish;
+     #45000 $finish;
 `endif
    end
 
 `ifndef VERILATOR
 initial begin
-   forever  begin 
+   forever  begin
      core_clk = #5 ~core_clk;
    end
 end

@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2019 Western Digital Corporation or its affiliates.
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -53,7 +53,7 @@ irun: ${RV_ROOT}/configs/snapshots/$(snapshot)/common_defines.vh
 ${RV_ROOT}/configs/snapshots/$(snapshot)/common_defines.vh:
 	${RV_ROOT}/configs/swerv.config -snapshot=$(snapshot)
 
-verilator-run: 
+verilator-run:
 	snapshot=ahb
 	${RV_ROOT}/configs/swerv.config -snapshot=$(snapshot) -ahb
 	verilator '-UASSERT_ON' --cc -CFLAGS ${CFLAGS} $(defines) $(includes) ${RV_ROOT}/configs/snapshots/$(snapshot)/common_defines.vh \
@@ -61,7 +61,7 @@ verilator-run:
 		-f ${RV_ROOT}/design/flist.verilator --top-module tb_top -exe test_tb_top.cpp --trace --autoflush
 	cp ${RV_ROOT}/testbench/test_tb_top.cpp obj_dir/
 	make -C obj_dir/ -f Vtb_top.mk
-	cp ${RV_ROOT}/testbench/hex/*.hex .
+	cp ${RV_ROOT}/testbench/tests/*.hex .
 	./obj_dir/Vtb_top
 
 help:
