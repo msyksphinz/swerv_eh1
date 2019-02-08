@@ -169,7 +169,7 @@ module tb_top ( input logic core_clk, input logic reset_l);
      reset_l = 0;
 `endif
 
-     $readmemh("data.hex",          i_ahb_lsu.mem);
+     $readmemh("data.hex",    i_ahb_lsu.mem);
      $readmemh("program.hex", i_ahb_ic.mem);
      tp = $fopen("trace_port.csv","w");
 
