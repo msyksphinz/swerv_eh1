@@ -16,7 +16,7 @@
 `ifndef VERILATOR
 module tb_top;
 `else
-module tb_top ( input logic core_clk, input logic reset_l);
+module tb_top ( input logic core_clk, input logic reset_l, output finished);
 `endif
 
 `ifndef VERILATOR
@@ -92,10 +92,13 @@ module tb_top ( input logic core_clk, input logic reset_l);
 
    logic        [31:0]                  cycleCnt       ;
    logic                                mailbox_data_val;
+   logic                                finished;
    //assign mailbox_write = &{i_ahb_lsu.Write, i_ahb_lsu.Last_HADDR==32'hD0580000, i_ahb_lsu.HRESETn==1};
    assign mailbox_write = i_ahb_lsu.mailbox_write;
    //assign mailbox_write = i_ahb_lsu.mailbox_write & !core_clk;
-   assign mailbox_data_val = (i_ahb_lsu.WriteData[7:0] > 8'h1f) & (i_ahb_lsu.WriteData[7:0] < 8'h7f);
+   assign mailbox_data_val = (i_ahb_lsu.WriteData[7:0] > 8'h5) & (i_ahb_lsu.WriteData[7:0] < 8'h7f);
+
+   assign finished = finished | &{i_ahb_lsu.mailbox_write, (i_ahb_lsu.WriteData[7:0] == 8'hff)};
 
 `ifndef VERILATOR
    `define FORCE force
@@ -120,15 +123,28 @@ module tb_top ( input logic core_clk, input logic reset_l);
 
    always @(posedge core_clk) begin
       //if(cycleCnt == 32'h800)
-      if(cycleCnt == 32'h8000)
-        $finish;
+        if(cycleCnt == 32'h800) begin
+            $display ("Hit max cycle count.. stopping");
+            $finish;
+        end
    end
 
 
+`ifdef VERILATOR
    always @(negedge mailbox_write)
+`else
+   always @(posedge mailbox_write)
+`endif
      if( mailbox_data_val ) begin
-       $fwrite(fd,"%c", i_ahb_lsu.WriteData[7:0]);
-       $write("%c", i_ahb_lsu.WriteData[7:0]);
+           $fwrite(fd,"%c", i_ahb_lsu.WriteData[7:0]);
+           $write("%c", i_ahb_lsu.WriteData[7:0]);
+     end
+
+   always @(posedge finished) begin
+        $display("\n\nFinished : minstret = %0d, mcycle = %0d", rvtop.swerv.dec.tlu.minstretl[31:0],rvtop.swerv.dec.tlu.mcyclel[31:0]);
+`ifndef VERILATOR
+        $finish;
+`endif
      end
 
    always @(posedge core_clk) begin
@@ -176,7 +192,7 @@ module tb_top ( input logic core_clk, input logic reset_l);
 `ifndef VERILATOR
      repeat (5) @(posedge core_clk);
      reset_l = 1;
-     #45000 $finish;
+     #100000 $display("");$finish;
 `endif
    end
 
@@ -194,9 +210,9 @@ end
    swerv_wrapper rvtop (
             .rst_l              ( reset_l       ),
             .clk                ( core_clk      ),
-            .rst_vec            ( 31'h80000000  ),
+            .rst_vec            ( 31'h40000000  ),
             .nmi_int            ( nmi_int       ),
-            .nmi_vec            ( 31'hee000000  ),
+            .nmi_vec            ( 31'h77000000  ),
 
             .haddr              ( ic_haddr      ),
             .hburst             ( ic_hburst     ),
